@@ -8,10 +8,10 @@ export class FormStore {
   private fieldEntities: FieldEntity[] = [];
   // 保存初始值，该初始值会受到Form.props.initialValues和Form.item.props.initialValue影响
   private initialValues: Store = {};
-  constructor(initialValues: Store) {
-    this.store = { ...this.store, ...initialValues ?? {} }
-    this.initialValues = initialValues
-  }
+  // constructor(initialValues: Store) {
+  //   this.store = { ...this.store, ...initialValues ?? {} }
+  //   this.initialValues = initialValues
+  // }
   private callbacks: Callbacks = {}
   public setCallback = (callbacks: Callbacks) => {
     this.callbacks = callbacks;
@@ -84,6 +84,10 @@ export class FormStore {
     this.notifyObservers(prevStore, nameList, { type: 'reset' });
 
 
+  }
+  public setInitialValues = (values: Record<string, any> | undefined) => {
+    this.initialValues = values ?? {};
+    this.store = { ...this.store, ...this.initialValues }
   }
 
 

@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import {  useMemo, useRef } from "react";
 import WrapperField from "./Field";
 import FieldContext, { FieldContextValueType } from "./FieldContext";
 import { FormStore } from "./FormStore";
-import type { Store } from "./typings";
 
 type BaseFormProps = Omit<
   React.FormHTMLAttributes<HTMLFormElement>,
@@ -10,7 +9,7 @@ type BaseFormProps = Omit<
 >;
 // 第一阶段的props需要实现的参数只有initialValues、children
 export type FormProps = BaseFormProps & {
-  initialValues?: Store;
+  initialValues?: Record<string, any>;
   onFinish?: (values: any) => void;
   onValueChange?: (
     changeValue: Record<string, any>,
@@ -22,13 +21,14 @@ export type FormProps = BaseFormProps & {
 const Form = (props: FormProps) => {
   const { initialValues, children, onFinish, onValueChange } = props;
   // formStore的实例就是表单的数据状态和fieldEntities的对象
-  const formStore = useRef<FormStore>(new FormStore(initialValues ?? {}));
+  const formStore = useRef<FormStore>(new FormStore());
   const mountRef = useRef(false);
-
-  // 初始化回调函数
-  useEffect(() => {
+  if (!mountRef.current) {
+    // 设置全局的初始化值
+    formStore.current.setInitialValues(initialValues);
+    // 初始化回调函数
     formStore.current.setCallback({ onFinish, onValueChange });
-  }, [onFinish, onValueChange]);
+  }
   if (!mountRef.current) {
     mountRef.current = true;
   }
