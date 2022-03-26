@@ -1,7 +1,9 @@
-import {  useMemo, useRef } from "react";
-import WrapperField from "./Field";
+import React from "react";
+import { useMemo, useRef } from "react";
+import Field from "./Field";
 import FieldContext, { FieldContextValueType } from "./FieldContext";
-import { FormStore } from "./FormStore";
+import { useForm } from "./FormStore";
+import { FormInstance } from "./typings";
 
 type BaseFormProps = Omit<
   React.FormHTMLAttributes<HTMLFormElement>,
@@ -16,30 +18,37 @@ export type FormProps = BaseFormProps & {
     values: Record<string, any>
   ) => void;
   children?: React.ReactNode;
+  form: FormInstance;
 };
 
-const Form = (props: FormProps) => {
-  const { initialValues, children, onFinish, onValueChange } = props;
+const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
+  { initialValues, children, onFinish, onValueChange, form },
+  ref
+) => {
+  // const { initialValues, children, onFinish, onValueChange } = props;
   // formStore的实例就是表单的数据状态和fieldEntities的对象
-  const formStore = useRef<FormStore>(new FormStore());
+  // const formStore = useRef<FormStore>(new FormStore());
+  const [formStore] = useForm(form);
   const mountRef = useRef(false);
   if (!mountRef.current) {
     // 设置全局的初始化值
-    formStore.current.setInitialValues(initialValues);
+
+    formStore.getInternalHooks().setInitialValues(initialValues);
     // 初始化回调函数
-    formStore.current.setCallback({ onFinish, onValueChange });
+    formStore.getInternalHooks().setCallbacks({ onFinish, onValueChange });
   }
   if (!mountRef.current) {
     mountRef.current = true;
   }
-
+  // 如果用户是通过ref获取表单实例，则通过useImperativeHandle把formInstance返回出去
+  React.useImperativeHandle(ref, () => formStore);
   // 创建fieldContextValue用于注入到下面的FieldContext
   // 注入后子组件都能访问fieldContextValue
   const fieldContextValue = useMemo<FieldContextValueType>(
     () => ({
-      formStore: formStore.current,
+      formStore: formStore,
     }),
-    []
+    [formStore]
   );
 
   return (
@@ -47,12 +56,12 @@ const Form = (props: FormProps) => {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        formStore.current.submit();
+        formStore.submit();
       }}
       onReset={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        formStore.current.reset();
+        formStore.resetFields();
       }}
     >
       <FieldContext.Provider value={fieldContextValue}>
@@ -61,5 +70,19 @@ const Form = (props: FormProps) => {
     </form>
   );
 };
-Form.Item = WrapperField;
-export default Form;
+const InternalForm = React.forwardRef<FormInstance, FormProps>(Form);
+type InternalFormType = typeof InternalForm;
+
+interface RefFormType extends InternalFormType {
+  Item: typeof Field;
+  useForm: typeof useForm;
+}
+
+const RefForm: RefFormType = InternalForm as RefFormType;
+
+RefForm.Item = Field;
+RefForm.useForm = useForm;
+
+export { Field as Item };
+
+export default RefForm;

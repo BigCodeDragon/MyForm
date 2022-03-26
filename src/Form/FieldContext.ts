@@ -1,8 +1,8 @@
 import React from "react"
-import { Store } from "./typings"
+import { FormInstance } from "./typings"
 
 
-export type FieldContextValueType = { formStore: Store }
+export type FieldContextValueType = { formStore: FormInstance }
 const FieldContext = React.createContext<FieldContextValueType>(undefined as any)
 export default FieldContext
 

@@ -1,4 +1,5 @@
 import { FieldContextValueType } from "./FieldContext"
+import { FormStore } from "./FormStore"
 
 export type Store = {
   setInitialValues?: (initialValues: Store | undefined, init: boolean) => void;
@@ -45,4 +46,18 @@ export type NotifyInfo = { type: 'reset' | 'valueUpdate'; sourece?: string; }
 export type ValuedNotifyInfo = NotifyInfo & {
   store: Store;
 };
+
+export type FormInstance = {
+  getFieldValue: typeof FormStore.prototype.getFieldValue;
+  getFieldsValue: typeof FormStore.prototype.getFieldsValue;
+  submit: typeof FormStore.prototype.submit;
+  resetFields: typeof FormStore.prototype.resetFields;
+  getInternalHooks: typeof FormStore.prototype.getInternalHooks;
+}
+export type getInternalHooks = {
+  updateValue: typeof FormStore.prototype.updateValue,
+  initEntityValue: typeof FormStore.prototype.initEntityValue,
+  registerField: typeof FormStore.prototype.registerField,
+  setCallbacks: typeof FormStore.prototype.setCallbacks,
+}
 

@@ -1,5 +1,17 @@
-import type { Callbacks, FieldEntity, NotifyInfo, Store, ValuedNotifyInfo } from './typings';
+import { useRef } from 'react';
+import type { Callbacks, FieldEntity, FormInstance, NotifyInfo, Store, ValuedNotifyInfo } from './typings';
 
+export const useForm = (form?: FormInstance): [FormInstance] => {
+  const formRef = useRef<FormInstance>();
+  if(!formRef.current){
+    if(form){
+      formRef.current = form
+    }else{
+      formRef.current = new FormStore()
+    }
+  }
+  return [formRef.current]
+}
 export class FormStore {
 
   // 保存数据状态的变量
@@ -8,12 +20,8 @@ export class FormStore {
   private fieldEntities: FieldEntity[] = [];
   // 保存初始值，该初始值会受到Form.props.initialValues和Form.item.props.initialValue影响
   private initialValues: Store = {};
-  // constructor(initialValues: Store) {
-  //   this.store = { ...this.store, ...initialValues ?? {} }
-  //   this.initialValues = initialValues
-  // }
   private callbacks: Callbacks = {}
-  public setCallback = (callbacks: Callbacks) => {
+  public setCallbacks = (callbacks: Callbacks) => {
     this.callbacks = callbacks;
   }
   // 提交表达
@@ -23,6 +31,7 @@ export class FormStore {
       onFinish(this.store)
     }
   }
+
 
 
   // 根据name获取store中的值
@@ -70,7 +79,14 @@ export class FormStore {
       onStoreChange(prevStore, namePathList, mergedInfo);
     });
   };
-  public reset = (nameList?: string[]) => {
+  public getInternalHooks = () => ({
+    updateValue: this.updateValue,
+    initEntityValue: this.initEntityValue,
+    registerField: this.registerField,
+    setCallbacks: this.setCallbacks,
+    setInitialValues: this.setInitialValues,
+  })
+  public resetFields = (nameList?: string[]) => {
     const prevStore = this.store;
     // nameList没传，直接重置整个表单
     if (!nameList) {

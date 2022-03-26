@@ -36,11 +36,11 @@ class Field
     super(props);
     const { formStore } = props.fieldContext;
     // 更改formStore的initialValue, initialValue的优先级比initialValues高
-    formStore.initEntityValue!(this);
+    formStore.getInternalHooks().initEntityValue!(this);
   }
   public componentDidMount() {
     this.mounted = true;
-    this.props.fieldContext.formStore.registerField!(this);
+    this.props.fieldContext.formStore.getInternalHooks().registerField!(this);
   }
   public onStoreChange: FieldEntity["onStoreChange"] = (
     prevStore,
@@ -107,7 +107,7 @@ class Field
         newValue = defaultGetValueFromEvent(...args);
       }
       // 控件触发后需要更新formStore里的值
-      fieldContext.formStore.updateValue!(name, newValue);
+      fieldContext.formStore.getInternalHooks().updateValue!(name, newValue);
       if (originTriggerFunc) {
         originTriggerFunc(...args);
       }
