@@ -1,6 +1,6 @@
 import React from "react";
-import FieldContext, {  } from "./FieldContext";
-import { FieldEntity, FieldProps,   } from "./typings";
+import FieldContext from "./FieldContext";
+import { FieldEntity, FieldProps } from "./typings";
 
 // 这里WrapperField作用主要在于把FieldContext的值提取出来注入到Field
 // 为什么不直接在Field中获取fieldContext呢？原因如下：
@@ -27,10 +27,15 @@ class Field
   implements FieldEntity
 {
   private mounted = false;
+  public state = {
+    // 定义resetCount用作React.Fragment的key值，
+    // 在reset的时候更改resetCount值以达到重新渲染的目的
+    resetCount: 0,
+  };
   constructor(props: FieldProps) {
     super(props);
     const { formStore } = props.fieldContext;
-    // 更改formStore的initialValue
+    // 更改formStore的initialValue, initialValue的优先级比initialValues高
     formStore.initEntityValue!(this);
   }
   public componentDidMount() {
@@ -44,10 +49,16 @@ class Field
   ) => {
     const { store } = info;
     const { name } = this.props;
-    const preValue = store[name!];
-    const curValue = prevStore[name!];
+    const curValue = store[name!];
+    const preValue = prevStore[name!];
     const nameMatch = namePathList && namePathList.includes(name!);
     switch (info.type) {
+      case "reset":
+        if (!namePathList || nameMatch) {
+          // 使用refresh可以重置控件的其他字段
+          this.refresh();
+        }
+        break;
       default:
         if (nameMatch || (name && curValue !== preValue)) {
           this.reRender();
@@ -55,15 +66,23 @@ class Field
         break;
     }
   };
-  // 如果已经挂载了，就可以牵制更新
+  // 如果已经挂载了，就可以强制更新
   public reRender() {
     if (this.mounted) {
       this.forceUpdate();
     }
   }
 
+  private refresh() {
+    if (this.mounted) {
+      this.setState(({ resetCount }) => ({
+        resetCount: resetCount + 1,
+      }));
+    }
+  }
+
   // 生成要通过React.cloneElement隐式混入到控件里的prop
-  public getControlled(childProps: any = {}) {
+  private getControlled(childProps: any = {}) {
     const {
       trigger = "onChange",
       name,
@@ -71,15 +90,12 @@ class Field
       fieldContext,
       getValueFromEvent,
     } = this.props;
-    const value = name
-      ? fieldContext.formStore.getFieldValue!(name)
-      : '';
+    const value = name ? fieldContext.formStore.getFieldValue!(name) : "";
     const control: any = {
       ...childProps,
       [valuePropName]: value,
     };
-   
-    
+
     // 去除原本在控件上定义的触发事件
     const originTriggerFunc = childProps[trigger];
     // 增强回调触发方法
@@ -96,16 +112,26 @@ class Field
         originTriggerFunc(...args);
       }
     };
-    console.log(control);
     return control;
   }
 
   public render() {
     const { children } = this.props;
+    let returnChildren;
     if (React.isValidElement(children)) {
-      return React.cloneElement(children, this.getControlled(children.props));
+      returnChildren = React.cloneElement(
+        children,
+        this.getControlled(children.props)
+      );
+    } else {
+      returnChildren = children;
     }
-    return children;
+    return (
+      // 故意要使用下resetCount, 使得resetCount改变时组件重新渲染
+      <React.Fragment key={this.state.resetCount}>
+        {returnChildren}
+      </React.Fragment>
+    );
   }
 }
 

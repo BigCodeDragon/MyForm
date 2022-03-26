@@ -13,6 +13,15 @@ export type Store = {
   registerField?: (entity: FieldEntity) => void;
   [props: string]: any;
 }
+export interface Callbacks<Values = any> {
+  onValueChange?: (
+    changeValue: Record<string, any>,
+    values: Record<string, any>
+  ) => void;
+  onFinish?: (values: Values) => void;
+}
+
+
 export type FieldProps = {
   name?: string;
   label?: string;
@@ -31,8 +40,9 @@ export type FieldEntity = {
   onStoreChange: (store: Store, namePathList: string[] | undefined, mergedInfo: ValuedNotifyInfo) => void;
 }
 
-export type NotifyInfo = { type: string; sourece: string; }
+export type NotifyInfo = { type: 'reset' | 'valueUpdate'; sourece?: string; }
 
 export type ValuedNotifyInfo = NotifyInfo & {
   store: Store;
 };
+

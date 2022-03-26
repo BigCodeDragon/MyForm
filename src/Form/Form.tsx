@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import WrapperField from "./Field";
 import FieldContext, { FieldContextValueType } from "./FieldContext";
 import { FormStore } from "./FormStore";
@@ -11,19 +11,24 @@ type BaseFormProps = Omit<
 // 第一阶段的props需要实现的参数只有initialValues、children
 export type FormProps = BaseFormProps & {
   initialValues?: Store;
+  onFinish?: (values: any) => void;
+  onValueChange?: (
+    changeValue: Record<string, any>,
+    values: Record<string, any>
+  ) => void;
   children?: React.ReactNode;
 };
 
 const Form = (props: FormProps) => {
-  const { initialValues, children } = props;
+  const { initialValues, children, onFinish, onValueChange } = props;
   // formStore的实例就是表单的数据状态和fieldEntities的对象
-  const formStore = useRef<FormStore>(new FormStore());
+  const formStore = useRef<FormStore>(new FormStore(initialValues ?? {}));
   const mountRef = useRef(false);
 
-  // 如果有initialValues就初始化表单的数据状态
-  if (initialValues) {
-    formStore.current.setInitialValues(initialValues, mountRef.current);
-  }
+  // 初始化回调函数
+  useEffect(() => {
+    formStore.current.setCallback({ onFinish, onValueChange });
+  }, [onFinish, onValueChange]);
   if (!mountRef.current) {
     mountRef.current = true;
   }
@@ -38,7 +43,18 @@ const Form = (props: FormProps) => {
   );
 
   return (
-    <form>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        formStore.current.submit();
+      }}
+      onReset={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        formStore.current.reset();
+      }}
+    >
       <FieldContext.Provider value={fieldContextValue}>
         {children}
       </FieldContext.Provider>
